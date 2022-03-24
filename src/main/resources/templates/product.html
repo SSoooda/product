@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품관리</title>
+    <style>
+        button{
+            width : 75px
+        }
+    </style>
+</head>
+<body>
+    <h3>상품관리시스템</h3>
+    <hr>
+    <form action="">
+        <p>상품이름 <input type="text" id="productName"></p>
+        <p>상품수량 <input type="text" id="productCnt"></p>
+        <p>상품가격 <input type="text" id="productPri"></p>
+    </form>
+    <div><button id="uploadBtn">등록</button><button id="listBtn">목록</button></div>
+    <div><input type="text" id="detailProduct_num"><button id="detailBtn">조회</button><button id="updateBtn">수정</button></div>
+    <hr>
+    <div>상품목록</div>
+    <div id="itemList"></div>
+    <script>
+    uploadBtn.addEventListener('click',upload_f);
+    listBtn.addEventListener('click',list_f);
+    detailBtn.addEventListener('click',detail_f);
+    updateBtn.addEventListener('click',update_f);
+
+    //물건 등록
+    function upload_f(e){
+      const data = {};
+      data.product_name = productName.value;
+      data.product_cnt = productCnt.value;
+      data.product_pri = productPri.value;
+
+
+      fetch('/product/api',{
+        method:'POST',
+        headers: { 'Content-Type':'application/json'},
+        body: JSON.stringify(data)  // js객체 => json포맷 문자열 변환
+      }).then(res=>res.json())         // json포맷 문자열 => js객체 변환
+        .then(res=>{console.log(res); list_f(); })
+        .catch(err=>{console.error('Err:',err)});
+    }
+
+    //전체조회
+    function list_f(e){
+
+      fetch('/product/api',{
+        method:'GET'
+      }).then(res=>res.json())
+        .then(res=>printProductList(res))
+        .catch(err=>{console.error('Err:',err)});
+    }
+
+    //전체조회 출력
+    function printProductList(res) {
+      console.log(res);
+          let html = '';
+          if(res.rcd === '00'){
+            res.data.forEach(product => {
+              html +=`<p>`;
+              html += `<p>상품번호:${product.product_num}, 상품명:${product.product_name}, 상품수량:${product.product_cnt}, 가격:${product.product_pri}`;
+              html += `   <button data-product-num='${product.product_num}' onclick='del_f(event)'>삭제</button></p>`
+              html +=`</p>`;
+            });
+          }else if(res.rcd === '01'){
+            html = '';
+          }else{
+            alert(res.rtmsg);
+          }
+          itemList.innerHTML = html;
+    }
+
+    //물건 조회
+    function detail_f(e){
+      const url = `/product/api/${detailProduct_num.value}`;
+      fetch(url,{
+        method:'GET'
+      }).then(res=>res.json())
+        .then(res=>printProduct(res))
+        .catch(err=>{console.error('Err:',err)});
+    }
+
+    //단일 출력
+    function printProduct(res) {
+      console.log(res);
+          let html = '';
+          if(res.rcd === '00'){
+              html +=`<p>`;
+              html += `<p>상품번호:${res.data.product_num}, 상품명:${res.data.product_name}, 상품수량:${res.data.product_cnt}, 가격:${res.data.product_pri}`;
+              html += `   <button data-product-num='${res.data.product_num}' onclick='del_f(event)'>삭제</button></p>`
+              html +=`</p>`;
+          }else if(res.rcd === '01'){
+            html = '해당번호의 상품이 없습니다';
+          }else{
+            alert(res.rtmsg);
+          }
+          itemList.innerHTML = html;
+    }
+
+    //물건삭제
+    function del_f(e){
+      const url = `/product/api/${e.target.dataset.productNum}`;
+      fetch(url,{
+        method:'DELETE'
+      }).then(res=>res.json())
+        .then(res=>{console.log(res); list_f()})
+        .catch(err=>{console.error('Err:',err)});
+    }
+
+    //물건수정
+    function update_f(e){
+      const data = {};
+      data.product_num = detailProduct_num.value;
+      data.product_name = productName.value;
+      data.product_cnt = productCnt.value;
+      data.product_pri = productPri.value;
+      const url = `/product/api/${detailProduct_num.value}`;
+
+      fetch(url,{
+        method:'PATCH',
+        headers: { 'Content-Type':'application/json'},
+        body: JSON.stringify(data)  // js객체 => json포맷 문자열 변환
+      }).then(res=>res.json())         // json포맷 문자열 => js객체 변환
+        .then(res=>{console.log(res); list_f(); })
+        .catch(err=>{console.error('Err:',err)});
+    }
+
+  </script>
+</body>
+</html>
